@@ -66,8 +66,8 @@ EndBSPDependencies */
 
 static int8_t TEMPLATE_Init(void);
 static int8_t TEMPLATE_DeInit(void);
-static int8_t TEMPLATE_Control(uint8_t cmd, uint8_t *pbuf, uint16_t length);
-static int8_t TEMPLATE_Receive(uint8_t *pbuf, uint32_t *Len);
+static int8_t TEMPLATE_Control(uint8_t cmd, uint8_t *pbuf, uint16_t length, int16_t index);
+static int8_t TEMPLATE_Receive(uint8_t *pbuf, uint32_t *length, int16_t index);
 
 USBD_CDC_ItfTypeDef USBD_CDC_Template_fops =
 {
@@ -122,9 +122,10 @@ static int8_t TEMPLATE_DeInit(void)
   * @param  Cmd: Command code
   * @param  Buf: Buffer containing command data (request parameters)
   * @param  Len: Number of data to be sent (in bytes)
+  * @param  Index: Interface number
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t TEMPLATE_Control(uint8_t cmd, uint8_t *pbuf, uint16_t length)
+static int8_t TEMPLATE_Control(uint8_t cmd, uint8_t *pbuf, uint16_t length, uint16_t index)
 {
   switch (cmd)
   {
@@ -199,9 +200,10 @@ static int8_t TEMPLATE_Control(uint8_t cmd, uint8_t *pbuf, uint16_t length)
   *
   * @param  Buf: Buffer of data to be received
   * @param  Len: Number of data received (in bytes)
+  * @param  Index: Interface number
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t TEMPLATE_Receive(uint8_t *Buf, uint32_t *Len)
+static int8_t TEMPLATE_Receive(uint8_t *pbuf, uint32_t *length, uint16_t index)
 {
 
   return (0);
