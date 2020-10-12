@@ -263,7 +263,6 @@ static int8_t CDC_Receive_FS(uint8_t* buf, uint32_t *len, uint16_t index)
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS, index);
   // DEBUG
-  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
   CDC_Transmit_FS(buf, *len, index);
   //CDC_Transmit_FS(buf, *len, 3);
   return (USBD_OK);
