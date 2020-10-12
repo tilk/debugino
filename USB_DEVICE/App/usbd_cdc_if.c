@@ -23,7 +23,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "main.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -260,12 +260,14 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length, uint16
 static int8_t CDC_Receive_FS(uint8_t* buf, uint32_t *len, uint16_t index)
 {
   /* USER CODE BEGIN 6 */
+  osMessageQueueId_t queue = index < 2 ? queueUSBtoUARTHandle : queueUSBtoDWIREHandle;
+  if (osMessageQueueGetSpace(queue) < *len)
+    return USBD_FAIL;
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS, index);
-  // DEBUG
-  CDC_Transmit_FS(buf, *len, index);
-  //CDC_Transmit_FS(buf, *len, 3);
-  return (USBD_OK);
+  for (int i = 0; i < *len; i++)
+    osMessageQueuePut(queue, &buf[i], 0, 0);
+  return USBD_OK;
   /* USER CODE END 6 */
 }
 

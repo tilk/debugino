@@ -1,5 +1,7 @@
 #MicroXplorer Configuration settings - do not modify
-FREERTOS.IPParameters=Tasks01,configUSE_PREEMPTION,configUSE_TICKLESS_IDLE
+FREERTOS.FootprintOK=true
+FREERTOS.IPParameters=Tasks01,configUSE_PREEMPTION,configUSE_TICKLESS_IDLE,Queues01,FootprintOK
+FREERTOS.Queues01=queueUARTtoUSB,128,uint8_t,0,Static,queueUARTtoUSBBuffer,queueUARTtoUSBControlBlock;queueUSBtoUART,128,uint8_t,0,Static,queueUSBtoUARTBuffer,queueUSBtoUARTControlBlock;queueDWIREtoUSB,128,uint8_t,0,Static,queueDWIREtoUSBBuffer,queueDWIREtoUSBControlBlock;queueUSBtoDWIRE,128,uint8_t,0,Static,queueUSBtoDWIREBuffer,queueUSBtoDWIREControlBlock
 FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL
 FREERTOS.configUSE_PREEMPTION=1
 FREERTOS.configUSE_TICKLESS_IDLE=0

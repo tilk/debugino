@@ -32,7 +32,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "cmsis_os2.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -55,6 +55,10 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
+osMessageQueueId_t queueUARTtoUSBHandle;
+osMessageQueueId_t queueUSBtoUARTHandle;
+osMessageQueueId_t queueDWIREtoUSBHandle;
+osMessageQueueId_t queueUSBtoDWIREHandle;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

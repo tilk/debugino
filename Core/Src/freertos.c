@@ -30,6 +30,7 @@
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
+typedef StaticQueue_t osStaticMessageQDef_t;
 /* USER CODE BEGIN PTD */
 
 /* USER CODE END PTD */
@@ -54,6 +55,50 @@ const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
+};
+/* Definitions for queueUARTtoUSB */
+osMessageQueueId_t queueUARTtoUSBHandle;
+uint8_t queueUARTtoUSBBuffer[ 128 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t queueUARTtoUSBControlBlock;
+const osMessageQueueAttr_t queueUARTtoUSB_attributes = {
+  .name = "queueUARTtoUSB",
+  .cb_mem = &queueUARTtoUSBControlBlock,
+  .cb_size = sizeof(queueUARTtoUSBControlBlock),
+  .mq_mem = &queueUARTtoUSBBuffer,
+  .mq_size = sizeof(queueUARTtoUSBBuffer)
+};
+/* Definitions for queueUSBtoUART */
+osMessageQueueId_t queueUSBtoUARTHandle;
+uint8_t queueUSBtoUARTBuffer[ 128 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t queueUSBtoUARTControlBlock;
+const osMessageQueueAttr_t queueUSBtoUART_attributes = {
+  .name = "queueUSBtoUART",
+  .cb_mem = &queueUSBtoUARTControlBlock,
+  .cb_size = sizeof(queueUSBtoUARTControlBlock),
+  .mq_mem = &queueUSBtoUARTBuffer,
+  .mq_size = sizeof(queueUSBtoUARTBuffer)
+};
+/* Definitions for queueDWIREtoUSB */
+osMessageQueueId_t queueDWIREtoUSBHandle;
+uint8_t queueDWIREtoUSBBuffer[ 128 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t queueDWIREtoUSBControlBlock;
+const osMessageQueueAttr_t queueDWIREtoUSB_attributes = {
+  .name = "queueDWIREtoUSB",
+  .cb_mem = &queueDWIREtoUSBControlBlock,
+  .cb_size = sizeof(queueDWIREtoUSBControlBlock),
+  .mq_mem = &queueDWIREtoUSBBuffer,
+  .mq_size = sizeof(queueDWIREtoUSBBuffer)
+};
+/* Definitions for queueUSBtoDWIRE */
+osMessageQueueId_t queueUSBtoDWIREHandle;
+uint8_t queueUSBtoDWIREBuffer[ 128 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t queueUSBtoDWIREControlBlock;
+const osMessageQueueAttr_t queueUSBtoDWIRE_attributes = {
+  .name = "queueUSBtoDWIRE",
+  .cb_mem = &queueUSBtoDWIREControlBlock,
+  .cb_size = sizeof(queueUSBtoDWIREControlBlock),
+  .mq_mem = &queueUSBtoDWIREBuffer,
+  .mq_size = sizeof(queueUSBtoDWIREBuffer)
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -88,6 +133,19 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of queueUARTtoUSB */
+  queueUARTtoUSBHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueUARTtoUSB_attributes);
+
+  /* creation of queueUSBtoUART */
+  queueUSBtoUARTHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueUSBtoUART_attributes);
+
+  /* creation of queueDWIREtoUSB */
+  queueDWIREtoUSBHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueDWIREtoUSB_attributes);
+
+  /* creation of queueUSBtoDWIRE */
+  queueUSBtoDWIREHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueUSBtoDWIRE_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -117,7 +175,16 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+//    osDelay(1);
+    uint8_t data;
+    osStatus_t status;
+    status = osMessageQueueGet(queueUSBtoUARTHandle, &data, NULL, 0);
+    if (status == osOK)
+      osMessageQueuePut(queueUARTtoUSBHandle, &data, 0, 0);
+    status = osMessageQueueGet(queueUSBtoDWIREHandle, &data, NULL, 0);
+    if (status == osOK)
+      osMessageQueuePut(queueDWIREtoUSBHandle, &data, 0, 0);
+    
   }
   /* USER CODE END StartDefaultTask */
 }
