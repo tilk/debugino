@@ -33,6 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "cmsis_os2.h"
+#include "uart_helper.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -55,10 +56,14 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
-osMessageQueueId_t queueUARTtoUSBHandle;
-osMessageQueueId_t queueUSBtoUARTHandle;
-osMessageQueueId_t queueDWIREtoUSBHandle;
-osMessageQueueId_t queueUSBtoDWIREHandle;
+extern osMessageQueueId_t queueUARTtoUSBHandle;
+extern osMessageQueueId_t queueUSBtoUARTHandle;
+extern osMessageQueueId_t queueDWIREtoUSBHandle;
+extern osMessageQueueId_t queueUSBtoDWIREHandle;
+extern osSemaphoreId_t txSemaphore1Handle;
+extern osSemaphoreId_t txSemaphore2Handle;
+extern UARTHelper_HandleTypeDef huarth1;
+extern UARTHelper_HandleTypeDef huarth3;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

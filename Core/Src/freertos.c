@@ -26,18 +26,21 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "usart.h"
+#include "uart_helper.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
+typedef StaticTask_t osStaticThreadDef_t;
 typedef StaticQueue_t osStaticMessageQDef_t;
+typedef StaticSemaphore_t osStaticSemaphoreDef_t;
 /* USER CODE BEGIN PTD */
 
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define UART_TX_BUFFER_SIZE 16
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -55,6 +58,30 @@ const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
+};
+/* Definitions for uartSender1 */
+osThreadId_t uartSender1Handle;
+uint32_t uartSender1Buffer[ 128 ];
+osStaticThreadDef_t uartSender1ControlBlock;
+const osThreadAttr_t uartSender1_attributes = {
+  .name = "uartSender1",
+  .stack_mem = &uartSender1Buffer[0],
+  .stack_size = sizeof(uartSender1Buffer),
+  .cb_mem = &uartSender1ControlBlock,
+  .cb_size = sizeof(uartSender1ControlBlock),
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for uartSender2 */
+osThreadId_t uartSender2Handle;
+uint32_t uartSender2Buffer[ 128 ];
+osStaticThreadDef_t uartSender2ControlBlock;
+const osThreadAttr_t uartSender2_attributes = {
+  .name = "uartSender2",
+  .stack_mem = &uartSender2Buffer[0],
+  .stack_size = sizeof(uartSender2Buffer),
+  .cb_mem = &uartSender2ControlBlock,
+  .cb_size = sizeof(uartSender2ControlBlock),
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for queueUARTtoUSB */
 osMessageQueueId_t queueUARTtoUSBHandle;
@@ -100,6 +127,22 @@ const osMessageQueueAttr_t queueUSBtoDWIRE_attributes = {
   .mq_mem = &queueUSBtoDWIREBuffer,
   .mq_size = sizeof(queueUSBtoDWIREBuffer)
 };
+/* Definitions for txSemaphore1 */
+osSemaphoreId_t txSemaphore1Handle;
+osStaticSemaphoreDef_t txSemaphore1ControlBlock;
+const osSemaphoreAttr_t txSemaphore1_attributes = {
+  .name = "txSemaphore1",
+  .cb_mem = &txSemaphore1ControlBlock,
+  .cb_size = sizeof(txSemaphore1ControlBlock),
+};
+/* Definitions for txSemaphore2 */
+osSemaphoreId_t txSemaphore2Handle;
+osStaticSemaphoreDef_t txSemaphore2ControlBlock;
+const osSemaphoreAttr_t txSemaphore2_attributes = {
+  .name = "txSemaphore2",
+  .cb_mem = &txSemaphore2ControlBlock,
+  .cb_size = sizeof(txSemaphore2ControlBlock),
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -107,6 +150,8 @@ const osMessageQueueAttr_t queueUSBtoDWIRE_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
+void StartUartSender1(void *argument);
+void StartUartSender2(void *argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -124,6 +169,13 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
+
+  /* Create the semaphores(s) */
+  /* creation of txSemaphore1 */
+  txSemaphore1Handle = osSemaphoreNew(1, 1, &txSemaphore1_attributes);
+
+  /* creation of txSemaphore2 */
+  txSemaphore2Handle = osSemaphoreNew(1, 1, &txSemaphore2_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -148,11 +200,19 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
+  UARTHelper_Init(&huarth1, &huart1, queueUSBtoUARTHandle, queueUARTtoUSBHandle, txSemaphore1Handle);
+  UARTHelper_Init(&huarth3, &huart3, queueUSBtoDWIREHandle, queueDWIREtoUSBHandle, txSemaphore2Handle);
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* creation of uartSender1 */
+  uartSender1Handle = osThreadNew(StartUartSender1, NULL, &uartSender1_attributes);
+
+  /* creation of uartSender2 */
+  uartSender2Handle = osThreadNew(StartUartSender2, NULL, &uartSender2_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -175,18 +235,45 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-//    osDelay(1);
-    uint8_t data;
-    osStatus_t status;
-    status = osMessageQueueGet(queueUSBtoUARTHandle, &data, NULL, 0);
-    if (status == osOK)
-      osMessageQueuePut(queueUARTtoUSBHandle, &data, 0, 0);
-    status = osMessageQueueGet(queueUSBtoDWIREHandle, &data, NULL, 0);
-    if (status == osOK)
-      osMessageQueuePut(queueDWIREtoUSBHandle, &data, 0, 0);
-    
+    osDelay(1);
   }
   /* USER CODE END StartDefaultTask */
+}
+
+/* USER CODE BEGIN Header_StartUartSender1 */
+/**
+* @brief Function implementing the uartSender1 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartUartSender1 */
+void StartUartSender1(void *argument)
+{
+  /* USER CODE BEGIN StartUartSender1 */
+  /* Infinite loop */
+  for(;;)
+  {
+    UARTHelper_TX(&huarth1);
+  }
+  /* USER CODE END StartUartSender1 */
+}
+
+/* USER CODE BEGIN Header_StartUartSender2 */
+/**
+* @brief Function implementing the uartSender2 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartUartSender2 */
+void StartUartSender2(void *argument)
+{
+  /* USER CODE BEGIN StartUartSender2 */
+  /* Infinite loop */
+  for(;;)
+  {
+    UARTHelper_TX(&huarth3);
+  }
+  /* USER CODE END StartUartSender2 */
 }
 
 /* Private application code --------------------------------------------------*/
