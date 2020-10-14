@@ -53,7 +53,19 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
+static void TrySendQueueToCDC(osMessageQueueId_t queue, int index) {
+  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+  if (hcdc->TxState == 0) {
+    int n;
+    for (n = 0; n < APP_TX_DATA_SIZE; n++) {
+        osStatus_t status = osMessageQueueGet(queue, &UserTxBufferFS[n], NULL, 0);
+        if (status != osOK) break;
+    }
+    if (n > 0) CDC_Transmit_FS(UserTxBufferFS, n, index);
+  }
+}
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -63,7 +75,6 @@ extern UART_HandleTypeDef huart3;
 extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN EV */
-extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -172,21 +183,8 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
   /* USER CODE END USB_LP_CAN1_RX0_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_FS);
   /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 1 */
-  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState == 0) {
-    uint8_t data;
-    osStatus_t status;
-    status = osMessageQueueGet(queueUARTtoUSBHandle, &data, NULL, 0);
-    if (status == osOK)
-        CDC_Transmit_FS(&data, 1, 0);
-  }
-  if (hcdc->TxState == 0) {
-    uint8_t data;
-    osStatus_t status;
-    status = osMessageQueueGet(queueDWIREtoUSBHandle, &data, NULL, 0);
-    if (status == osOK)
-        CDC_Transmit_FS(&data, 1, 2);
-  }
+  TrySendQueueToCDC(queueUARTtoUSBHandle, 0);
+  TrySendQueueToCDC(queueDWIREtoUSBHandle, 2);
   /* USER CODE END USB_LP_CAN1_RX0_IRQn 1 */
 }
 
