@@ -89,7 +89,8 @@
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
-uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
+uint8_t UserRxBufferFS1[APP_RX_DATA_SIZE];
+uint8_t UserRxBufferFS2[APP_RX_DATA_SIZE];
 
 /** Data to send over USB CDC are stored in this buffer   */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
@@ -153,7 +154,8 @@ static int8_t CDC_Init_FS(void)
   /* USER CODE BEGIN 3 */
   /* Set Application Buffers */
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS1, 0);
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS2, 1);
   return (USBD_OK);
   /* USER CODE END 3 */
 }
@@ -260,13 +262,12 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length, uint16
 static int8_t CDC_Receive_FS(uint8_t* buf, uint32_t *len, uint16_t index)
 {
   /* USER CODE BEGIN 6 */
-  osMessageQueueId_t queue = index < 2 ? queueUSBtoUARTHandle : queueUSBtoDWIREHandle;
+  osMessageQueueId_t queue = index < 1 ? queueUSBtoUARTHandle : queueUSBtoDWIREHandle;
   if (osMessageQueueGetSpace(queue) < *len)
     return USBD_FAIL;
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &buf[0]);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS, index);
   for (int i = 0; i < *len; i++)
     osMessageQueuePut(queue, &buf[i], 0, 0);
+  USBD_CDC_ReceivePacket(&hUsbDeviceFS, index);
   return USBD_OK;
   /* USER CODE END 6 */
 }
@@ -297,6 +298,15 @@ uint8_t CDC_Transmit_FS(uint8_t* buf, uint16_t len, uint16_t index)
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+int8_t CDC_Retry_Receive_FS(uint16_t index)
+{
+  USBD_CDC_HandleTypeDef   *hcdc = (USBD_CDC_HandleTypeDef *) hUsbDeviceFS.pClassData;
+  if (hcdc != NULL) {
+    if (hcdc->RxLength[index] > 0)
+      CDC_Receive_FS(hcdc->RxBuffer[index], &hcdc->RxLength[index], index);
+  }
+  return USBD_OK;
+}
 
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 

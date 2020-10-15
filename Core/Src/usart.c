@@ -251,8 +251,14 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 /* USER CODE BEGIN 1 */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-  if (huart == &huart1) UARTHelper_TXCpltHandler(&huarth1);
-  if (huart == &huart3) UARTHelper_TXCpltHandler(&huarth3);
+  if (huart == &huart1) {
+    UARTHelper_TXCpltHandler(&huarth1);
+    CDC_Retry_Receive_FS(0);
+  }
+  if (huart == &huart3) {
+    UARTHelper_TXCpltHandler(&huarth3);
+    CDC_Retry_Receive_FS(1);
+  }
 }
 /* USER CODE END 1 */
 

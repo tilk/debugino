@@ -111,6 +111,7 @@ extern uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 uint8_t CDC_Transmit_FS(uint8_t* pbuf, uint16_t len, uint16_t index);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
+int8_t CDC_Retry_Receive_FS(uint16_t index);
 
 /* USER CODE END EXPORTED_FUNCTIONS */
 
