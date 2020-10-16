@@ -262,7 +262,7 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length, uint16
 static int8_t CDC_Receive_FS(uint8_t* buf, uint32_t *len, uint16_t index)
 {
   /* USER CODE BEGIN 6 */
-  osMessageQueueId_t queue = index < 1 ? queueUSBtoUARTHandle : queueUSBtoDWIREHandle;
+  osMessageQueueId_t queue = index < 1 ? queueUSBtoUARTHandle : queueUSBtoDEBUGHandle;
   if (osMessageQueueGetSpace(queue) < *len)
     return USBD_FAIL;
   for (int i = 0; i < *len; i++)

@@ -52,10 +52,10 @@ typedef StaticSemaphore_t osStaticSemaphoreDef_t;
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
+/* Definitions for debugger */
+osThreadId_t debuggerHandle;
+const osThreadAttr_t debugger_attributes = {
+  .name = "debugger",
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
@@ -105,27 +105,49 @@ const osMessageQueueAttr_t queueUSBtoUART_attributes = {
   .mq_mem = &queueUSBtoUARTBuffer,
   .mq_size = sizeof(queueUSBtoUARTBuffer)
 };
-/* Definitions for queueDWIREtoUSB */
-osMessageQueueId_t queueDWIREtoUSBHandle;
-uint8_t queueDWIREtoUSBBuffer[ 128 * sizeof( uint8_t ) ];
-osStaticMessageQDef_t queueDWIREtoUSBControlBlock;
-const osMessageQueueAttr_t queueDWIREtoUSB_attributes = {
-  .name = "queueDWIREtoUSB",
-  .cb_mem = &queueDWIREtoUSBControlBlock,
-  .cb_size = sizeof(queueDWIREtoUSBControlBlock),
-  .mq_mem = &queueDWIREtoUSBBuffer,
-  .mq_size = sizeof(queueDWIREtoUSBBuffer)
+/* Definitions for queueDWIREtoDEBUG */
+osMessageQueueId_t queueDWIREtoDEBUGHandle;
+uint8_t queueDWIREtoDEBUGBuffer[ 128 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t queueDWIREtoDEBUGControlBlock;
+const osMessageQueueAttr_t queueDWIREtoDEBUG_attributes = {
+  .name = "queueDWIREtoDEBUG",
+  .cb_mem = &queueDWIREtoDEBUGControlBlock,
+  .cb_size = sizeof(queueDWIREtoDEBUGControlBlock),
+  .mq_mem = &queueDWIREtoDEBUGBuffer,
+  .mq_size = sizeof(queueDWIREtoDEBUGBuffer)
 };
-/* Definitions for queueUSBtoDWIRE */
-osMessageQueueId_t queueUSBtoDWIREHandle;
-uint8_t queueUSBtoDWIREBuffer[ 128 * sizeof( uint8_t ) ];
-osStaticMessageQDef_t queueUSBtoDWIREControlBlock;
-const osMessageQueueAttr_t queueUSBtoDWIRE_attributes = {
-  .name = "queueUSBtoDWIRE",
-  .cb_mem = &queueUSBtoDWIREControlBlock,
-  .cb_size = sizeof(queueUSBtoDWIREControlBlock),
-  .mq_mem = &queueUSBtoDWIREBuffer,
-  .mq_size = sizeof(queueUSBtoDWIREBuffer)
+/* Definitions for queueDEBUGtoDWIRE */
+osMessageQueueId_t queueDEBUGtoDWIREHandle;
+uint8_t queueDEBUGtoDWIREBuffer[ 128 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t queueDEBUGtoDWIREControlBlock;
+const osMessageQueueAttr_t queueDEBUGtoDWIRE_attributes = {
+  .name = "queueDEBUGtoDWIRE",
+  .cb_mem = &queueDEBUGtoDWIREControlBlock,
+  .cb_size = sizeof(queueDEBUGtoDWIREControlBlock),
+  .mq_mem = &queueDEBUGtoDWIREBuffer,
+  .mq_size = sizeof(queueDEBUGtoDWIREBuffer)
+};
+/* Definitions for queueDEBUGtoUSB */
+osMessageQueueId_t queueDEBUGtoUSBHandle;
+uint8_t queueDEBUGtoUSBBuffer[ 128 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t queueDEBUGtoUSBControlBlock;
+const osMessageQueueAttr_t queueDEBUGtoUSB_attributes = {
+  .name = "queueDEBUGtoUSB",
+  .cb_mem = &queueDEBUGtoUSBControlBlock,
+  .cb_size = sizeof(queueDEBUGtoUSBControlBlock),
+  .mq_mem = &queueDEBUGtoUSBBuffer,
+  .mq_size = sizeof(queueDEBUGtoUSBBuffer)
+};
+/* Definitions for queueUSBtoDEBUG */
+osMessageQueueId_t queueUSBtoDEBUGHandle;
+uint8_t queueUSBtoDEBUGBuffer[ 128 * sizeof( uint8_t ) ];
+osStaticMessageQDef_t queueUSBtoDEBUGControlBlock;
+const osMessageQueueAttr_t queueUSBtoDEBUG_attributes = {
+  .name = "queueUSBtoDEBUG",
+  .cb_mem = &queueUSBtoDEBUGControlBlock,
+  .cb_size = sizeof(queueUSBtoDEBUGControlBlock),
+  .mq_mem = &queueUSBtoDEBUGBuffer,
+  .mq_size = sizeof(queueUSBtoDEBUGBuffer)
 };
 /* Definitions for txSemaphore1 */
 osSemaphoreId_t txSemaphore1Handle;
@@ -149,7 +171,7 @@ const osSemaphoreAttr_t txSemaphore2_attributes = {
 
 /* USER CODE END FunctionPrototypes */
 
-void StartDefaultTask(void *argument);
+void StartDebugger(void *argument);
 void StartUartSender1(void *argument);
 void StartUartSender2(void *argument);
 
@@ -192,21 +214,27 @@ void MX_FREERTOS_Init(void) {
   /* creation of queueUSBtoUART */
   queueUSBtoUARTHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueUSBtoUART_attributes);
 
-  /* creation of queueDWIREtoUSB */
-  queueDWIREtoUSBHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueDWIREtoUSB_attributes);
+  /* creation of queueDWIREtoDEBUG */
+  queueDWIREtoDEBUGHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueDWIREtoDEBUG_attributes);
 
-  /* creation of queueUSBtoDWIRE */
-  queueUSBtoDWIREHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueUSBtoDWIRE_attributes);
+  /* creation of queueDEBUGtoDWIRE */
+  queueDEBUGtoDWIREHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueDEBUGtoDWIRE_attributes);
+
+  /* creation of queueDEBUGtoUSB */
+  queueDEBUGtoUSBHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueDEBUGtoUSB_attributes);
+
+  /* creation of queueUSBtoDEBUG */
+  queueUSBtoDEBUGHandle = osMessageQueueNew (128, sizeof(uint8_t), &queueUSBtoDEBUG_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   UARTHelper_Init(&huarth1, &huart1, queueUSBtoUARTHandle, queueUARTtoUSBHandle, txSemaphore1Handle);
-  UARTHelper_Init(&huarth3, &huart3, queueUSBtoDWIREHandle, queueDWIREtoUSBHandle, txSemaphore2Handle);
+  UARTHelper_Init(&huarth3, &huart3, queueDEBUGtoDWIREHandle, queueDWIREtoDEBUGHandle, txSemaphore2Handle);
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  /* creation of debugger */
+  debuggerHandle = osThreadNew(StartDebugger, NULL, &debugger_attributes);
 
   /* creation of uartSender1 */
   uartSender1Handle = osThreadNew(StartUartSender1, NULL, &uartSender1_attributes);
@@ -220,24 +248,29 @@ void MX_FREERTOS_Init(void) {
 
 }
 
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_StartDebugger */
 /**
-  * @brief  Function implementing the defaultTask thread.
+  * @brief  Function implementing the debugger thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
+/* USER CODE END Header_StartDebugger */
+void StartDebugger(void *argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
-  /* USER CODE BEGIN StartDefaultTask */
+  /* USER CODE BEGIN StartDebugger */
+  char buf;
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osStatus_t status;
+    status = osMessageQueueGet(queueUSBtoDEBUGHandle, &buf, NULL, 5);
+    if (status == osOK) osMessageQueuePut(queueDEBUGtoDWIREHandle, &buf, 0, 0);
+    status = osMessageQueueGet(queueDWIREtoDEBUGHandle, &buf, NULL, 5);
+    if (status == osOK) osMessageQueuePut(queueDEBUGtoUSBHandle, &buf, 0, 0);
   }
-  /* USER CODE END StartDefaultTask */
+  /* USER CODE END StartDebugger */
 }
 
 /* USER CODE BEGIN Header_StartUartSender1 */

@@ -58,8 +58,10 @@ void Error_Handler(void);
 
 extern osMessageQueueId_t queueUARTtoUSBHandle;
 extern osMessageQueueId_t queueUSBtoUARTHandle;
-extern osMessageQueueId_t queueDWIREtoUSBHandle;
-extern osMessageQueueId_t queueUSBtoDWIREHandle;
+extern osMessageQueueId_t queueDWIREtoDEBUGHandle;
+extern osMessageQueueId_t queueDEBUGtoDWIREHandle;
+extern osMessageQueueId_t queueDEBUGtoUSBHandle;
+extern osMessageQueueId_t queueUSBtoDEBUGHandle;
 extern osSemaphoreId_t txSemaphore1Handle;
 extern osSemaphoreId_t txSemaphore2Handle;
 extern UARTHelper_HandleTypeDef huarth1;
