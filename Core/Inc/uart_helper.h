@@ -11,6 +11,7 @@ typedef struct {
   UART_HandleTypeDef *huart;
   uint8_t DMA_RX_Buffer[DMA_RX_BUFFER_SIZE];
   uint8_t DMA_TX_Buffer[DMA_TX_BUFFER_SIZE];
+  size_t position_RX;
   osMessageQueueId_t queueTX, queueRX;
   osSemaphoreId_t semTX;
 } UARTHelper_HandleTypeDef;

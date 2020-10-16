@@ -21,7 +21,7 @@
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "usbd_cdc_if.h"
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -250,7 +250,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 
 /* USER CODE BEGIN 1 */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
   if (huart == &huart1) {
     UARTHelper_TXCpltHandler(&huarth1);
     CDC_Retry_Receive_FS(0);
