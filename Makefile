@@ -81,7 +81,8 @@ Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3/port.c \
 Core/Src/dma.c \
-Core/Src/uart_helper.c
+Core/Src/uart_helper.c \
+Core/Src/queue_io.c
 
 # ASM sources
 ASM_SOURCES =  \
