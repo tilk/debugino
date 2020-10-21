@@ -24,4 +24,12 @@ void UARTHelper_TXCpltHandler(UARTHelper_HandleTypeDef *huarth);
 
 void UARTHelper_TX(UARTHelper_HandleTypeDef *huarth);
 
+void UARTHelper_SendBreak(UARTHelper_HandleTypeDef *huarth);
+size_t UARTHelper_Send(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len);
+size_t UARTHelper_TrySend(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len);
+size_t UARTHelper_TrySend1(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len);
+size_t UARTHelper_Recv(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len);
+size_t UARTHelper_TryRecv(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len);
+size_t UARTHelper_TryRecv1(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len);
+
 #endif
