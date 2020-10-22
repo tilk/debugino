@@ -97,6 +97,7 @@ int main(void)
   MX_TIM1_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_OC_Start(&htim1, TIM_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Init scheduler */
