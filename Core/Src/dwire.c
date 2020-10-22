@@ -38,8 +38,10 @@
 #define DWIRE_BAUD_64 0x82
 #define DWIRE_BAUD_32 0x81
 #define DWIRE_BAUD_16 0x80
+#define DWIRE_SET_PC_LOW 0xc0
 #define DWIRE_SET_PC 0xd0
 #define DWIRE_SET_BP 0xd1
+#define DWIRE_SET_BP_LOW 0xc1
 #define DWIRE_SET_IR 0xd2
 #define DWIRE_GET_PC 0xf0
 #define DWIRE_GET_BP 0xf1
@@ -263,6 +265,29 @@ void DWire_CheckSignature(DWire_HandleTypeDef *dwire)
   DWire_Send(dwire, BYTES(DWIRE_GET_SIG));
   uint16_t sig = DWire_ReceiveWord(dwire);
   if (sig != DWIRE_DEV_SIG) longjmp(dwire->env, 2);
+}
+
+void DWire_ReadFlash(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *buf, size_t count)
+{
+  DWire_SetZ(dwire, addr);
+  DWire_SetBP(dwire, count * 2);
+  DWire_SetPC(dwire, 0);
+  DWire_Send(dwire, BYTES(DWIRE_FLAG_MEMORY, DWIRE_RW_MODE, DWIRE_MODE_READ_FLASH));
+  DWire_Receive(dwire, buf, count);
+}
+
+void DWire_WriteFlashPage(DWire_HandleTypeDef *dwire)
+{
+  // TODO: cache more regs
+  DWire_SetRegs(dwire, 26, BYTES(0x03, 0x01, 0x05, 0x40, 0x00, 0x00));
+  DWire_SetPC(dwire, 0x1f00);
+  DWire_PreInst(dwire);
+  DWire_Inst(dwire, 0xcf01);  // movw r24,r30
+  DWire_Out(dwire, 0x37, 26); // out SPMCSR,r26 = 0x03
+  DWire_Inst(dwire, 0xe895);  // spm
+  // TODO break and resync?
+
+  // TODO: restore regs
 }
 
 

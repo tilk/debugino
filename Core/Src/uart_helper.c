@@ -12,6 +12,7 @@ void UARTHelper_Init(UARTHelper_HandleTypeDef *huarth, UART_HandleTypeDef *huart
   osSemaphoreAcquire(huarth->semTX, osWaitForever);
 
   LL_USART_EnableIT_IDLE(huarth->huart->Instance);
+  LL_USART_EnableIT_LBD(huarth->huart->Instance);
   HAL_DMA_Start_IT(huarth->huart->hdmarx, (uint32_t)&huarth->huart->Instance->DR, (uint32_t) huarth->DMA_RX_Buffer, DMA_RX_BUFFER_SIZE);
   __HAL_DMA_ENABLE_IT(huarth->huart->hdmarx, DMA_IT_TC | DMA_IT_HT);
   LL_USART_EnableDMAReq_RX(huarth->huart->Instance);
@@ -35,6 +36,9 @@ void UARTHelper_IRQHandler(UARTHelper_HandleTypeDef *huarth)
   if (LL_USART_IsActiveFlag_IDLE(huarth->huart->Instance)) {
     LL_USART_ClearFlag_IDLE(huarth->huart->Instance);
     UARTHelper_HandleRX(huarth);
+  }
+  if (LL_USART_IsActiveFlag_LBD(huarth->huart->Instance)) {
+    LL_USART_ClearFlag_LBD(huarth->huart->Instance);
   }
 }
 
