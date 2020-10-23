@@ -16,6 +16,7 @@
 
 static uint8_t buffer[BUFFER_SIZE];
 static const char debugger_id[] = "debugino";
+static uint8_t txseq = 1;
 
 static inline int RecvCharCksum(uint8_t *cksum)
 {
@@ -50,9 +51,8 @@ int ReceiveSTK500v2()
 void SendSTK500v2(int sz)
 {
   uint8_t cksum = 0;
-  static uint8_t seq;
   SendCharCksum(&cksum, STK500v2_MESSAGE_START);
-  SendCharCksum(&cksum, seq++);
+  SendCharCksum(&cksum, txseq++);
   SendCharCksum(&cksum, (sz >> 8) & 0xff);
   SendCharCksum(&cksum, sz & 0xff);
   SendCharCksum(&cksum, STK500v2_TOKEN);
@@ -97,6 +97,7 @@ void HandleSTK500v2()
       // TODO: DWIRE reset and start
       buffer[1] = STK500v2_STATUS_CMD_OK;
       SendSTK500v2(2);
+      txseq = 1;
       break;
     }
     case STK500v2_CMD_ENTER_PROGMODE_ISP: {
