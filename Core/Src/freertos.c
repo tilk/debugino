@@ -69,7 +69,7 @@ const osThreadAttr_t uartSender1_attributes = {
   .stack_size = sizeof(uartSender1Buffer),
   .cb_mem = &uartSender1ControlBlock,
   .cb_size = sizeof(uartSender1ControlBlock),
-  .priority = (osPriority_t) osPriorityLow,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for uartSender2 */
 osThreadId_t uartSender2Handle;
@@ -81,7 +81,7 @@ const osThreadAttr_t uartSender2_attributes = {
   .stack_size = sizeof(uartSender2Buffer),
   .cb_mem = &uartSender2ControlBlock,
   .cb_size = sizeof(uartSender2ControlBlock),
-  .priority = (osPriority_t) osPriorityLow,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for queueUARTtoUSB */
 osMessageQueueId_t queueUARTtoUSBHandle;
@@ -165,6 +165,22 @@ const osSemaphoreAttr_t txSemaphore2_attributes = {
   .cb_mem = &txSemaphore2ControlBlock,
   .cb_size = sizeof(txSemaphore2ControlBlock),
 };
+/* Definitions for breakRxSemaphore */
+osSemaphoreId_t breakRxSemaphoreHandle;
+osStaticSemaphoreDef_t breakRxSemaphoreControlBlock;
+const osSemaphoreAttr_t breakRxSemaphore_attributes = {
+  .name = "breakRxSemaphore",
+  .cb_mem = &breakRxSemaphoreControlBlock,
+  .cb_size = sizeof(breakRxSemaphoreControlBlock),
+};
+/* Definitions for breakTxSemaphore */
+osSemaphoreId_t breakTxSemaphoreHandle;
+osStaticSemaphoreDef_t breakTxSemaphoreControlBlock;
+const osSemaphoreAttr_t breakTxSemaphore_attributes = {
+  .name = "breakTxSemaphore",
+  .cb_mem = &breakTxSemaphoreControlBlock,
+  .cb_size = sizeof(breakTxSemaphoreControlBlock),
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -199,6 +215,12 @@ void MX_FREERTOS_Init(void) {
   /* creation of txSemaphore2 */
   txSemaphore2Handle = osSemaphoreNew(1, 1, &txSemaphore2_attributes);
 
+  /* creation of breakRxSemaphore */
+  breakRxSemaphoreHandle = osSemaphoreNew(1, 1, &breakRxSemaphore_attributes);
+
+  /* creation of breakTxSemaphore */
+  breakTxSemaphoreHandle = osSemaphoreNew(1, 1, &breakTxSemaphore_attributes);
+
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
@@ -228,8 +250,8 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
-  UARTHelper_Init(&huarth1, &huart1, queueUSBtoUARTHandle, queueUARTtoUSBHandle, txSemaphore1Handle);
-  UARTHelper_Init(&huarth3, &huart3, queueDEBUGtoDWIREHandle, queueDWIREtoDEBUGHandle, txSemaphore2Handle);
+  UARTHelper_Init(&huarth1, &huart1, queueUSBtoUARTHandle, queueUARTtoUSBHandle, txSemaphore1Handle, NULL, NULL);
+  UARTHelper_Init(&huarth3, &huart3, queueDEBUGtoDWIREHandle, queueDWIREtoDEBUGHandle, txSemaphore2Handle, breakTxSemaphoreHandle, breakRxSemaphoreHandle);
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */

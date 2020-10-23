@@ -3,6 +3,7 @@
 
 #include "stm32f1xx_hal.h"
 #include "cmsis_os2.h"
+#include <stdbool.h>
 
 #define DMA_RX_BUFFER_SIZE 64
 #define DMA_TX_BUFFER_SIZE 64
@@ -13,10 +14,10 @@ typedef struct {
   uint8_t DMA_TX_Buffer[DMA_TX_BUFFER_SIZE];
   size_t position_RX;
   osMessageQueueId_t queueTX, queueRX;
-  osSemaphoreId_t semTX;
+  osSemaphoreId_t semTX, semBrkTX, semBrkRX;
 } UARTHelper_HandleTypeDef;
 
-void UARTHelper_Init(UARTHelper_HandleTypeDef *huarth, UART_HandleTypeDef *huart, osMessageQueueId_t queueTX, osMessageQueueId_t queueRX, osSemaphoreId_t semTX);
+void UARTHelper_Init(UARTHelper_HandleTypeDef *huarth, UART_HandleTypeDef *huart, osMessageQueueId_t queueTX, osMessageQueueId_t queueRX, osSemaphoreId_t semTX, osSemaphoreId_t semBrkTX, osSemaphoreId_t semBrkRX);
 
 void UARTHelper_IRQHandler(UARTHelper_HandleTypeDef *huarth);
 void UARTHelper_RXDMAIRQHandler(UARTHelper_HandleTypeDef *huarth);
@@ -25,6 +26,7 @@ void UARTHelper_TXCpltHandler(UARTHelper_HandleTypeDef *huarth);
 void UARTHelper_TX(UARTHelper_HandleTypeDef *huarth);
 
 void UARTHelper_SendBreak(UARTHelper_HandleTypeDef *huarth);
+bool UARTHelper_PollBreak(UARTHelper_HandleTypeDef *huarth);
 size_t UARTHelper_Send(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len);
 size_t UARTHelper_TrySend(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len);
 size_t UARTHelper_TrySend1(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len);

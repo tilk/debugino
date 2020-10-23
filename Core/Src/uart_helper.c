@@ -1,18 +1,22 @@
 #include "uart_helper.h"
 #include "stm32f1xx_ll_usart.h"
 
-void UARTHelper_Init(UARTHelper_HandleTypeDef *huarth, UART_HandleTypeDef *huart, osMessageQueueId_t queueTX, osMessageQueueId_t queueRX, osSemaphoreId_t semTX)
+void UARTHelper_Init(UARTHelper_HandleTypeDef *huarth, UART_HandleTypeDef *huart, osMessageQueueId_t queueTX, osMessageQueueId_t queueRX, osSemaphoreId_t semTX, osSemaphoreId_t semBrkTX, osSemaphoreId_t semBrkRX)
 {
   huarth->huart = huart;
   huarth->queueTX = queueTX;
   huarth->queueRX = queueRX;
   huarth->semTX = semTX;
+  huarth->semBrkTX = semBrkTX;
+  huarth->semBrkRX = semBrkRX;
   huarth->position_RX = 0;
 
   osSemaphoreAcquire(huarth->semTX, osWaitForever);
+  if (huarth->semBrkRX) osSemaphoreAcquire(huarth->semBrkRX, osWaitForever);
+  if (huarth->semBrkTX) osSemaphoreAcquire(huarth->semBrkTX, osWaitForever);
 
   LL_USART_EnableIT_IDLE(huarth->huart->Instance);
-  LL_USART_EnableIT_LBD(huarth->huart->Instance);
+  if (huarth->semBrkRX) LL_USART_EnableIT_LBD(huarth->huart->Instance);
   HAL_DMA_Start_IT(huarth->huart->hdmarx, (uint32_t)&huarth->huart->Instance->DR, (uint32_t) huarth->DMA_RX_Buffer, DMA_RX_BUFFER_SIZE);
   __HAL_DMA_ENABLE_IT(huarth->huart->hdmarx, DMA_IT_TC | DMA_IT_HT);
   LL_USART_EnableDMAReq_RX(huarth->huart->Instance);
@@ -39,6 +43,7 @@ void UARTHelper_IRQHandler(UARTHelper_HandleTypeDef *huarth)
   }
   if (LL_USART_IsActiveFlag_LBD(huarth->huart->Instance)) {
     LL_USART_ClearFlag_LBD(huarth->huart->Instance);
+    if (huarth->semBrkRX) osSemaphoreRelease(huarth->semBrkRX);
   }
 }
 
@@ -62,7 +67,12 @@ void UARTHelper_TXCpltHandler(UARTHelper_HandleTypeDef *huarth)
 void UARTHelper_TX(UARTHelper_HandleTypeDef *huarth)
 {
   int n = 0; 
-  osStatus_t status = osMessageQueueGet(huarth->queueTX, &huarth->DMA_TX_Buffer[n], 0, osWaitForever);
+  osStatus_t status = osMessageQueueGet(huarth->queueTX, &huarth->DMA_TX_Buffer[n], 0, 0);
+  if (status != osOK) {
+    if (huarth->semBrkTX) osSemaphoreRelease(huarth->semBrkTX);
+    status = osMessageQueueGet(huarth->queueTX, &huarth->DMA_TX_Buffer[n], 0, osWaitForever);
+    if (huarth->semBrkTX) osSemaphoreAcquire(huarth->semBrkTX, osWaitForever);
+  }
   while (status == osOK) {
     n++;
     if (n >= DMA_TX_BUFFER_SIZE) break;
@@ -76,7 +86,14 @@ void UARTHelper_TX(UARTHelper_HandleTypeDef *huarth)
 
 void UARTHelper_SendBreak(UARTHelper_HandleTypeDef *huarth)
 {
+  osSemaphoreAcquire(huarth->semBrkTX, osWaitForever);
   LL_USART_RequestBreakSending(huarth->huart->Instance);
+  osSemaphoreRelease(huarth->semBrkTX);
+}
+
+bool UARTHelper_PollBreak(UARTHelper_HandleTypeDef *huarth)
+{
+  return osSemaphoreAcquire(huarth->semBrkRX, 0) == osOK;
 }
 
 size_t UARTHelper_Send(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len)
