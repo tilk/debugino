@@ -1,5 +1,6 @@
 #include "uart_helper.h"
 #include "stm32f1xx_ll_usart.h"
+#include "queue_io.h"
 
 void UARTHelper_Init(UARTHelper_HandleTypeDef *huarth, UART_HandleTypeDef *huart, osMessageQueueId_t queueTX, osMessageQueueId_t queueRX, osSemaphoreId_t semTX, osSemaphoreId_t semBrkTX, osSemaphoreId_t semBrkRX)
 {
@@ -96,64 +97,39 @@ bool UARTHelper_PollBreak(UARTHelper_HandleTypeDef *huarth)
   return osSemaphoreAcquire(huarth->semBrkRX, 0) == osOK;
 }
 
+bool UARTHelper_PollRecv(UARTHelper_HandleTypeDef *huarth)
+{
+  return Queue_PollRecv(huarth->queueRX);
+}
+
 size_t UARTHelper_Send(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len)
 {
-  for (size_t i = 0; i < len; i++) {
-    osStatus_t status = osMessageQueuePut(huarth->queueTX, &buf[i], 0, osWaitForever);
-    if (status != osOK) return i;
-  }
-  return len;
+  return Queue_Send(huarth->queueTX, buf, len);
 }
 
 size_t UARTHelper_TrySend(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len)
 {
-  for (size_t i = 0; i < len; i++) {
-    osStatus_t status = osMessageQueuePut(huarth->queueTX, &buf[i], 0, 0);
-    if (status != osOK) return i;
-  }
-  return len;
+  return Queue_TrySend(huarth->queueTX, buf, len);
 }
 
 size_t UARTHelper_TrySend1(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len)
 {
-  size_t i = 0; 
-  osStatus_t status = osMessageQueuePut(huarth->queueTX, &buf[i], 0, osWaitForever);
-  while (status == osOK) {
-    i++;
-    if (i >= len) break;
-    status = osMessageQueuePut(huarth->queueTX, &buf[i], 0, 0);
-  }
-  return i;
+  return Queue_TrySend1(huarth->queueTX, buf, len);
 }
 
 size_t UARTHelper_Recv(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len)
 {
-  for (size_t i = 0; i < len; i++) {
-    osStatus_t status = osMessageQueueGet(huarth->queueRX, &buf[i], NULL, osWaitForever);
-    if (status != osOK) return i;
-  }
-  return len;
+  return Queue_Recv(huarth->queueRX, buf, len);
 }
 
 size_t UARTHelper_TryRecv(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len)
 {
-  for (size_t i = 0; i < len; i++) {
-    osStatus_t status = osMessageQueueGet(huarth->queueRX, &buf[i], NULL, 0);
-    if (status != osOK) return i;
-  }
-  return len;
+  return Queue_TryRecv(huarth->queueRX, buf, len);
 }
 
 size_t UARTHelper_TryRecv1(UARTHelper_HandleTypeDef *huarth, uint8_t *buf, size_t len)
 {
-  size_t i = 0; 
-  osStatus_t status = osMessageQueueGet(huarth->queueRX, &buf[i], NULL, osWaitForever);
-  while (status == osOK) {
-    i++;
-    if (i >= len) break;
-    status = osMessageQueueGet(huarth->queueRX, &buf[i], NULL, 0);
-  }
-  return i;
+  return Queue_TryRecv1(huarth->queueRX, buf, len);
 }
 
 

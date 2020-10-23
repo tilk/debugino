@@ -2,45 +2,86 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include "cmsis_os.h"
-#include "main.h"
+#include "queue_io.h"
 
-int _read(int file, char *data, int len)
+bool Queue_PollRecv(osMessageQueueId_t queue)
 {
-  if (len <= 0) return 0;
-  osStatus_t status = osMessageQueueGet(queueUSBtoDEBUGHandle, data, NULL, osWaitForever);
-  if (status != osOK) return -1;
-  int i;
-  for (i = 1; i < len; i++) {
-    status = osMessageQueueGet(queueUSBtoDEBUGHandle, data + i, NULL, 0);
-    if (status != osOK) break;
+  return osMessageQueueGetCount(queue) > 0;
+}
+
+size_t Queue_Send(osMessageQueueId_t queue, uint8_t *buf, size_t len)
+{
+  for (size_t i = 0; i < len; i++) {
+    osStatus_t status = osMessageQueuePut(queue, &buf[i], 0, osWaitForever);
+    if (status != osOK) return i;
+  }
+  return len;
+}
+
+size_t Queue_TrySend(osMessageQueueId_t queue, uint8_t *buf, size_t len)
+{
+  for (size_t i = 0; i < len; i++) {
+    osStatus_t status = osMessageQueuePut(queue, &buf[i], 0, 0);
+    if (status != osOK) return i;
+  }
+  return len;
+}
+
+size_t Queue_TrySend1(osMessageQueueId_t queue, uint8_t *buf, size_t len)
+{
+  size_t i = 0;
+  osStatus_t status = osMessageQueuePut(queue, &buf[i], 0, osWaitForever);
+  while (status == osOK) {
+    i++;
+    if (i >= len) break;
+    status = osMessageQueuePut(queue, &buf[i], 0, 0);
   }
   return i;
 }
 
-int _write(int file, char *data, int len)
+size_t Queue_Recv(osMessageQueueId_t queue, uint8_t *buf, size_t len)
 {
-  for (int i = 0; i < len; i++)
-    osMessageQueuePut(queueDEBUGtoUSBHandle, data + i, 0, osWaitForever);
+  for (size_t i = 0; i < len; i++) {
+    osStatus_t status = osMessageQueueGet(queue, &buf[i], NULL, osWaitForever);
+    if (status != osOK) return i;
+  }
   return len;
 }
 
-int _close(int file)
+size_t Queue_TryRecv(osMessageQueueId_t queue, uint8_t *buf, size_t len)
 {
-    return -1;
+  for (size_t i = 0; i < len; i++) {
+    osStatus_t status = osMessageQueueGet(queue, &buf[i], NULL, 0);
+    if (status != osOK) return i;
+  }
+  return len;
+
 }
 
-int _lseek(int file, int ptr, int dir)
+size_t Queue_TryRecv1(osMessageQueueId_t queue, uint8_t *buf, size_t len)
 {
-    return 0;
+  size_t i = 0;
+  osStatus_t status = osMessageQueueGet(queue, &buf[i], NULL, osWaitForever);
+  while (status == osOK) {
+    i++;
+    if (i >= len) break;
+    status = osMessageQueueGet(queue, &buf[i], NULL, 0);
+  }
+  return i;
 }
 
-int _fstat(int file, struct stat *st)
+void Queue_SendChar(osMessageQueueId_t queue, int c)
 {
-    return 0;
+  char buf = c;
+  Queue_Send(queue, &buf, 1);
 }
 
-int _isatty(int file)
+int Queue_RecvChar(osMessageQueueId_t queue)
 {
-    return 1;
+  char buf;
+  size_t s = Queue_Recv(queue, &buf, 1);
+  if (s == 1) return buf;
+  else return -1;
 }
+
 

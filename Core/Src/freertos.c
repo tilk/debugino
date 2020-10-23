@@ -28,6 +28,7 @@
 /* USER CODE BEGIN Includes */
 #include "usart.h"
 #include "uart_helper.h"
+#include "debugino.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -282,15 +283,10 @@ void StartDebugger(void *argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN StartDebugger */
-  char buf;
   /* Infinite loop */
   for(;;)
   {
-    osStatus_t status;
-    status = osMessageQueueGet(queueUSBtoDEBUGHandle, &buf, NULL, 5);
-    if (status == osOK) osMessageQueuePut(queueDEBUGtoDWIREHandle, &buf, 0, 0);
-    status = osMessageQueueGet(queueDWIREtoDEBUGHandle, &buf, NULL, 5);
-    if (status == osOK) osMessageQueuePut(queueDEBUGtoUSBHandle, &buf, 0, 0);
+    DebugLoop();
   }
   /* USER CODE END StartDebugger */
 }
