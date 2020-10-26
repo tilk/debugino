@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include "cmsis_os.h"
 #include "queue_io.h"
+#include "usbd_cdc_if.h"
 
 bool Queue_PollRecv(osMessageQueueId_t queue)
 {
@@ -44,6 +45,7 @@ size_t Queue_Recv(osMessageQueueId_t queue, uint8_t *buf, size_t len)
   for (size_t i = 0; i < len; i++) {
     osStatus_t status = osMessageQueueGet(queue, &buf[i], NULL, osWaitForever);
     if (status != osOK) return i;
+    CDC_Retry_Receive_FS(1); // TODO: HACK, less ugly solution?
   }
   return len;
 }
@@ -53,6 +55,7 @@ size_t Queue_TryRecv(osMessageQueueId_t queue, uint8_t *buf, size_t len)
   for (size_t i = 0; i < len; i++) {
     osStatus_t status = osMessageQueueGet(queue, &buf[i], NULL, 0);
     if (status != osOK) return i;
+    CDC_Retry_Receive_FS(1); // TODO: HACK, less ugly solution?
   }
   return len;
 
@@ -63,6 +66,7 @@ size_t Queue_TryRecv1(osMessageQueueId_t queue, uint8_t *buf, size_t len)
   size_t i = 0;
   osStatus_t status = osMessageQueueGet(queue, &buf[i], NULL, osWaitForever);
   while (status == osOK) {
+    CDC_Retry_Receive_FS(1); // TODO: HACK, less ugly solution?
     i++;
     if (i >= len) break;
     status = osMessageQueueGet(queue, &buf[i], NULL, 0);
