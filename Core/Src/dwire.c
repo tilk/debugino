@@ -17,6 +17,7 @@
 #define BYTES(...) (uint8_t[]){__VA_ARGS__}, sizeof((uint8_t[]){__VA_ARGS__})
 #define ADDR(a) ((a) >> 8) & 0xff, (a) & 0xff
 #define WORD(a) ((a) >> 8) & 0xff, (a) & 0xff
+#define WORD_LE(a) (a) & 0xff, ((a) >> 8) & 0xff
 
 #define CACHED_REG(reg) ((reg) >= 28 && (reg) <= 31)
 
@@ -176,7 +177,7 @@ void DWire_SetRegs(DWire_HandleTypeDef *dwire, size_t first, uint8_t *buf, size_
 
 void DWire_SetZ(DWire_HandleTypeDef *dwire, uint16_t addr)
 {
-  DWire_SetRegs(dwire, 30, BYTES(WORD(addr)));
+  DWire_SetRegs(dwire, 30, BYTES(WORD_LE(addr)));
 }
 
 void DWire_CacheRegs(DWire_HandleTypeDef *dwire)
@@ -328,7 +329,7 @@ void DWire_WriteFlashPage(DWire_HandleTypeDef *dwire)
 
 uint8_t DWire_ReadFuseBits(DWire_HandleTypeDef *dwire, uint16_t z)
 {
-  DWire_SetRegs(dwire, 29, BYTES(0x09, WORD(z)));
+  DWire_SetRegs(dwire, 29, BYTES(0x09, WORD_LE(z)));
   DWire_SetPC(dwire, 0x1f00);
   DWire_PreInst(dwire);
   DWire_Out_SPMCSR(dwire, 29);
