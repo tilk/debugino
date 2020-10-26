@@ -1,5 +1,6 @@
 
 #include "debugino.h"
+#include "dwire.h"
 #include "main.h"
 #include "queue_io.h"
 #include "stk500v2.h"
@@ -17,6 +18,8 @@
 static uint8_t buffer[BUFFER_SIZE];
 static const char debugger_id[] = "debugino";
 static uint8_t txseq = 1;
+static DWire_HandleTypeDef hdw;
+static uint32_t address;
 
 static inline int RecvCharCksum(uint8_t *cksum)
 {
@@ -65,6 +68,12 @@ void HandleSTK500v2()
 {
   int sz = ReceiveSTK500v2();
   if (sz <= 0) return;
+  if (setjmp(hdw.env)) {
+    // there was a DWIRE error, send a failure
+    buffer[1] = STK500v2_STATUS_CMD_FAILED;
+    SendSTK500v2(2);
+    return;
+  }
   switch (buffer[0]) {
     case STK500v2_CMD_SIGN_ON: {
       buffer[1] = STK500v2_STATUS_CMD_OK;
@@ -101,29 +110,68 @@ void HandleSTK500v2()
       break;
     }
     case STK500v2_CMD_ENTER_PROGMODE_ISP: {
-      // TODO: DWIRE break
+      DWire_Break(&hdw);
       buffer[1] = STK500v2_STATUS_CMD_OK;
       SendSTK500v2(2);
       break;
     }
     case STK500v2_CMD_READ_SIGNATURE_ISP: {
       uint8_t signatureIndex = buffer[4];
-      uint8_t signature;
+      uint8_t sigbyte;
+      uint16_t signature = DWire_Signature(&hdw);
       if (signatureIndex == 0) {
-        signature = 0;
-      } else if (signatureIndex == 1) {
-        signature = 1;
-      } else signature = 2;
+        sigbyte = 0x1e;
+      } else if (signatureIndex == 1)
+        sigbyte = signature >> 8;
+      else 
+        sigbyte = signature & 0xff;
       buffer[1] = STK500v2_STATUS_CMD_OK;
-      buffer[2] = signature;
+      buffer[2] = sigbyte;
       buffer[3] = STK500v2_STATUS_CMD_OK;
       SendSTK500v2(4);
       break;
     }
-    case STK500v2_CMD_LOAD_ADDRESS:
+    case STK500v2_CMD_READ_FUSE_ISP: {
+      uint8_t fuseBits;
+      if (buffer[2] == 0x50) {
+        if (buffer[3] == 0x08) fuseBits = DWire_ReadFuseBitsExt(&hdw);
+        else fuseBits = DWire_ReadFuseBitsLow(&hdw);
+      } else fuseBits = DWire_ReadFuseBitsHigh(&hdw);
+      buffer[1] = STK500v2_STATUS_CMD_OK;
+      buffer[2] = fuseBits;
+      buffer[3] = STK500v2_STATUS_CMD_OK;
+      SendSTK500v2(4);
+      break;
+    }
+    case STK500v2_CMD_READ_LOCK_ISP: {
+      buffer[1] = STK500v2_STATUS_CMD_OK;
+      buffer[2] = DWire_ReadLockBits(&hdw);
+      buffer[3] = STK500v2_STATUS_CMD_OK;
+      SendSTK500v2(4);
+      break;
+    }
+    case STK500v2_CMD_LOAD_ADDRESS: {
+      address = ((uint32_t)(buffer[1])<<24) | ((uint32_t)(buffer[2])<<16) | ((uint32_t)(buffer[3])<<8) | buffer[4];
+      buffer[1] = STK500v2_STATUS_CMD_OK;
+      SendSTK500v2(2);
+      break;
+    }
+    case STK500v2_CMD_READ_FLASH_ISP: {
+      uint16_t count = (buffer[1]<<8) | buffer[2];
+      if (count > BUFFER_SIZE - 3) {
+        buffer[1] = STK500v2_STATUS_CMD_FAILED;
+        SendSTK500v2(2);
+        break;
+      }
+      buffer[1] = STK500v2_STATUS_CMD_OK;
+      DWire_ReadFlash(&hdw, address * 2, &buffer[2], count);
+      buffer[count+2] = STK500v2_STATUS_CMD_OK;
+      SendSTK500v2(count + 3);
+      address += count/2;
+      break;
+    }
     case STK500v2_CMD_PROGRAM_FLASH_ISP:
     case STK500v2_CMD_PROGRAM_EEPROM_ISP:
-    case STK500v2_CMD_READ_FLASH_ISP:
     case STK500v2_CMD_READ_EEPROM_ISP:
     default: {
       buffer[1] = STK500v2_STATUS_CMD_FAILED;
@@ -158,5 +206,10 @@ void DebugLoop()
     fflush(stdout);
     osDelay(1);
   }
+}
+
+void DebugInit(UARTHelper_HandleTypeDef *huarth)
+{
+  hdw.huarth = huarth;
 }
 

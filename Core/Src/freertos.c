@@ -58,7 +58,7 @@ osThreadId_t debuggerHandle;
 const osThreadAttr_t debugger_attributes = {
   .name = "debugger",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 256 * 4
 };
 /* Definitions for uartSender1 */
 osThreadId_t uartSender1Handle;
@@ -284,6 +284,7 @@ void StartDebugger(void *argument)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN StartDebugger */
   /* Infinite loop */
+  DebugInit(&huarth3);
   for(;;)
   {
     DebugLoop();
