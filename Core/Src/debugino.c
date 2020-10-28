@@ -163,14 +163,33 @@ void HandleSTK500v2()
         SendSTK500v2(2);
         break;
       }
-      buffer[1] = STK500v2_STATUS_CMD_OK;
+      address += count/2;
       DWire_ReadFlash(&hdw, address * 2, &buffer[2], count);
+      buffer[1] = STK500v2_STATUS_CMD_OK;
       buffer[count+2] = STK500v2_STATUS_CMD_OK;
       SendSTK500v2(count + 3);
-      address += count/2;
       break;
     }
-    case STK500v2_CMD_PROGRAM_FLASH_ISP:
+    case STK500v2_CMD_CHIP_ERASE_ISP: {
+      buffer[1] = STK500v2_STATUS_CMD_OK;
+      SendSTK500v2(2);
+      break;
+    }
+    case STK500v2_CMD_PROGRAM_FLASH_ISP: {
+      HAL_GPIO_WritePin(GPIOC, LED_Pin, GPIO_PIN_SET);
+      // TODO: handle situations different than single page writes
+      uint16_t count = (buffer[1]<<8) | buffer[2];
+      if (count > BUFFER_SIZE - 3) {
+        buffer[1] = STK500v2_STATUS_CMD_FAILED;
+        SendSTK500v2(2);
+        break;
+      }
+      DWire_WriteFlashPage(&hdw, address * 2, &buffer[10], count);
+      address += count/2;
+      buffer[1] = STK500v2_STATUS_CMD_OK;
+      SendSTK500v2(2);
+      break;
+    }
     case STK500v2_CMD_PROGRAM_EEPROM_ISP:
     case STK500v2_CMD_READ_EEPROM_ISP:
     default: {

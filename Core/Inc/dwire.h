@@ -35,6 +35,7 @@ uint8_t DWire_ReadFuseBitsHigh(DWire_HandleTypeDef *dwire);
 uint8_t DWire_ReadFuseBitsExt(DWire_HandleTypeDef *dwire);
 uint8_t DWire_ReadLockBits(DWire_HandleTypeDef *dwire);
 void DWire_ReadFlash(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *buf, size_t count);
+void DWire_WriteFlashPage(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *buf, size_t count);
 
 #endif
 

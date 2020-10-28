@@ -35,7 +35,7 @@
 #define DWIRE_FLAG_SINGLE_STEP 0x7a
 #define DWIRE_FLAG_MEMORY 0x66
 #define DWIRE_FLAG_INST 0x64
-#define DWIRE_FLAG_WFLASH2 0x44
+#define DWIRE_FLAG_FLASH_INST 0x44
 #define DWIRE_BAUD_128 0x83
 #define DWIRE_BAUD_64 0x82
 #define DWIRE_BAUD_32 0x81
@@ -110,6 +110,11 @@ void DWire_PreInst(DWire_HandleTypeDef *dwire)
   DWire_Send(dwire, BYTES(DWIRE_FLAG_INST));
 }
 
+void DWire_PreFlashInst(DWire_HandleTypeDef *dwire)
+{
+  DWire_Send(dwire, BYTES(DWIRE_FLAG_FLASH_INST));
+}
+
 void DWire_Inst(DWire_HandleTypeDef *dwire, uint16_t inst)
 {
   DWire_Send(dwire, BYTES(DWIRE_SET_IR, WORD(inst), DWIRE_SS_INST));
@@ -143,6 +148,21 @@ void DWire_Out_SPMCSR(DWire_HandleTypeDef *dwire, uint8_t reg)
 void DWire_LPM(DWire_HandleTypeDef *dwire, uint8_t reg)
 {
   DWire_Inst(dwire, 0x9004 | (reg << 4));
+}
+
+void DWire_SPM(DWire_HandleTypeDef *dwire)
+{
+  DWire_Inst(dwire, 0x95e8);
+}
+
+void DWire_SPM_Z(DWire_HandleTypeDef *dwire)
+{
+  DWire_Inst(dwire, 0x95f8);
+}
+
+void DWire_LDI(DWire_HandleTypeDef *dwire, uint8_t reg, uint8_t val)
+{
+  DWire_Inst(dwire, 0xe000 | ((reg << 4) & 0xf0) | (val & 0xf) | ((val << 4) & 0xf00));
 }
 
 uint8_t DWire_GetReg(DWire_HandleTypeDef *dwire, size_t reg)
@@ -235,6 +255,13 @@ void DWire_Sync(DWire_HandleTypeDef *dwire)
   if (!UARTHelper_PollBreak(dwire->huarth)) longjmp(dwire->env, 1);
 }
 
+void DWire_BreakSync(DWire_HandleTypeDef *dwire)
+{
+  UARTHelper_PollBreak(dwire->huarth);
+  UARTHelper_SendBreak(dwire->huarth);
+  DWire_Sync(dwire);
+}
+
 void DWire_Reconnect(DWire_HandleTypeDef *dwire)
 {
   DWire_Send(dwire, BYTES(DWIRE_GET_PC));
@@ -255,9 +282,7 @@ void DWire_Disable(DWire_HandleTypeDef *dwire)
 
 void DWire_Break(DWire_HandleTypeDef *dwire)
 {
-  UARTHelper_PollBreak(dwire->huarth);
-  UARTHelper_SendBreak(dwire->huarth);
-  DWire_Sync(dwire);
+  DWire_BreakSync(dwire);
   DWire_Reconnect(dwire);
 }
 
@@ -313,25 +338,52 @@ void DWire_ReadFlash(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *buf, si
   DWire_Receive(dwire, buf, count);
 }
 
-void DWire_WriteFlashPage(DWire_HandleTypeDef *dwire)
+void DWire_WriteFlashPage(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *buf, size_t count)
 {
-  // TODO: cache more regs
-  DWire_SetRegs(dwire, 26, BYTES(0x03, 0x01, 0x05, 0x40, 0x00, 0x00));
-  DWire_SetPC(dwire, 0x1f00);
+  DWire_SetZ(dwire, addr);
+  DWire_SetPC(dwire, 0x3f00);
   DWire_PreInst(dwire);
-  DWire_Inst(dwire, 0x01cf);  // movw r24,r30
-  DWire_Out_SPMCSR(dwire, 26);
-  DWire_Inst(dwire, 0x95e8);  // spm
-  // TODO break and resync?
-
-  // TODO: restore regs
+//  DWire_Inst(dwire, 0x01cf);  // movw r24,r30
+  DWire_LDI(dwire, 29, 0x03);
+  DWire_Out_SPMCSR(dwire, 29);
+  DWire_SPM(dwire);
+  DWire_BreakSync(dwire);
+  DWire_PreFlashInst(dwire);
+  DWire_LDI(dwire, 29, 0x01);
+  for (int i = 0; i < count; i += 2) {
+    DWire_SetPC(dwire, 0x3f00);
+    DWire_In_DWDR(dwire, 0);
+    DWire_SendByte(dwire, buf[i]);
+    DWire_In_DWDR(dwire, 1);
+    DWire_SendByte(dwire, buf[i+1]);
+    DWire_Out_SPMCSR(dwire, 29);
+//    DWire_SPM_Z(dwire);
+    DWire_SPM(dwire);
+    DWire_Inst(dwire, 0x9632);
+  }
+  DWire_SetPC(dwire, 0x3f00);
+  DWire_LDI(dwire, 31, (addr >> 8) & 0xff);
+  DWire_LDI(dwire, 30, addr & 0xff);
+  DWire_LDI(dwire, 29, 0x05);
+  DWire_Out_SPMCSR(dwire, 29);
+  DWire_SPM(dwire);
+  osDelay(10); // TODO hack can we do without it?
+  DWire_BreakSync(dwire);
+  DWire_SetPC(dwire, 0x3f00);
+  DWire_LDI(dwire, 29, 0x11);
+  DWire_Out_SPMCSR(dwire, 29);
+  DWire_SPM(dwire);
+  DWire_BreakSync(dwire);
+  // TODO: restore regs r0/r1
 }
 
 uint8_t DWire_ReadFuseBits(DWire_HandleTypeDef *dwire, uint16_t z)
 {
-  DWire_SetRegs(dwire, 29, BYTES(0x09, WORD_LE(z)));
-  DWire_SetPC(dwire, 0x1f00);
+  DWire_SetZ(dwire, z);
+  //DWire_SetRegs(dwire, 29, BYTES(0x09, WORD_LE(z)));
+  //DWire_SetPC(dwire, 0x3f00);
   DWire_PreInst(dwire);
+  DWire_LDI(dwire, 29, 0x09);
   DWire_Out_SPMCSR(dwire, 29);
   DWire_LPM(dwire, 29);
   DWire_Out_DWDR(dwire, 29);
