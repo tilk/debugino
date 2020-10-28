@@ -202,6 +202,7 @@ void DWire_SetZ(DWire_HandleTypeDef *dwire, uint16_t addr)
 
 void DWire_CacheRegs(DWire_HandleTypeDef *dwire)
 {
+  DWire_Send(dwire, BYTES(DWIRE_GET_PC));
   dwire->pc = (DWire_ReceiveWord(dwire) * 2 - 1) % DWIRE_DEV_FLASH_SIZE;
   DWire_GetRegs(dwire, 28, &dwire->regs[28], 4);
 }
@@ -264,7 +265,6 @@ void DWire_BreakSync(DWire_HandleTypeDef *dwire)
 
 void DWire_Reconnect(DWire_HandleTypeDef *dwire)
 {
-  DWire_Send(dwire, BYTES(DWIRE_GET_PC));
   DWire_CacheRegs(dwire);
 }
 
@@ -303,6 +303,13 @@ void DWire_Step(DWire_HandleTypeDef *dwire)
   DWire_Send(dwire, BYTES(DWIRE_FLAG_RUN, DWIRE_RESUME_SS));
   DWire_Sync(dwire);
   DWire_Reconnect(dwire);
+}
+
+void DWire_Run(DWire_HandleTypeDef *dwire)
+{
+  dwire->pc = 0;
+  dwire->breakpoint = -1;
+  DWire_Continue(dwire);
 }
 
 void DWire_Continue(DWire_HandleTypeDef *dwire)
@@ -347,6 +354,7 @@ void DWire_WriteFlashPage(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *bu
   DWire_LDI(dwire, 29, 0x03);
   DWire_Out_SPMCSR(dwire, 29);
   DWire_SPM(dwire);
+  osDelay(10); // TODO hack can we do without it?
   DWire_BreakSync(dwire);
   DWire_PreFlashInst(dwire);
   DWire_LDI(dwire, 29, 0x01);
@@ -357,7 +365,6 @@ void DWire_WriteFlashPage(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *bu
     DWire_In_DWDR(dwire, 1);
     DWire_SendByte(dwire, buf[i+1]);
     DWire_Out_SPMCSR(dwire, 29);
-//    DWire_SPM_Z(dwire);
     DWire_SPM(dwire);
     DWire_Inst(dwire, 0x9632);
   }

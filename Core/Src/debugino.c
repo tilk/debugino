@@ -103,7 +103,8 @@ void HandleSTK500v2()
       break;
     }
     case STK500v2_CMD_LEAVE_PROGMODE_ISP: {
-      // TODO: DWIRE reset and start
+      DWire_Reset(&hdw);
+      DWire_Run(&hdw);
       buffer[1] = STK500v2_STATUS_CMD_OK;
       SendSTK500v2(2);
       txseq = 1;
@@ -163,8 +164,8 @@ void HandleSTK500v2()
         SendSTK500v2(2);
         break;
       }
-      address += count/2;
       DWire_ReadFlash(&hdw, address * 2, &buffer[2], count);
+      address += count/2;
       buffer[1] = STK500v2_STATUS_CMD_OK;
       buffer[count+2] = STK500v2_STATUS_CMD_OK;
       SendSTK500v2(count + 3);

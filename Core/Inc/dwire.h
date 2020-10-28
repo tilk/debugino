@@ -27,6 +27,7 @@ void DWire_Reconnect(DWire_HandleTypeDef *dwire);
 void DWire_Reset(DWire_HandleTypeDef *dwire);
 void DWire_Disable(DWire_HandleTypeDef *dwire);
 void DWire_Step(DWire_HandleTypeDef *dwire);
+void DWire_Run(DWire_HandleTypeDef *dwire);
 void DWire_Continue(DWire_HandleTypeDef *dwire);
 uint16_t DWire_Signature(DWire_HandleTypeDef *dwire);
 void DWire_CheckSignature(DWire_HandleTypeDef *dwire);
