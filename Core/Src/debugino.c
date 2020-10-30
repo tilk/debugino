@@ -177,7 +177,6 @@ void HandleSTK500v2()
       break;
     }
     case STK500v2_CMD_PROGRAM_FLASH_ISP: {
-      HAL_GPIO_WritePin(GPIOC, LED_Pin, GPIO_PIN_SET);
       // TODO: handle situations different than single page writes
       uint16_t count = (buffer[1]<<8) | buffer[2];
       if (count > BUFFER_SIZE - 3) {
