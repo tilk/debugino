@@ -56,6 +56,13 @@
 #define DWIRE_MODE_WRITE_SRAM 0x04
 #define DWIRE_MODE_WRITE_REGS 0x05
 
+void DWire_Init(DWire_HandleTypeDef *dwire, UARTHelper_HandleTypeDef *huarth)
+{
+  dwire->huarth = huarth;
+  dwire->have_all_regs = false;
+  dwire->stopped = false;
+}
+
 void DWire_Send(DWire_HandleTypeDef *dwire, uint8_t *buf, size_t len)
 {
   size_t i = 0;
@@ -207,9 +214,18 @@ void DWire_CacheRegs(DWire_HandleTypeDef *dwire)
   DWire_GetRegs(dwire, 28, &dwire->regs[28], 4);
 }
 
+void DWire_CacheAllRegs(DWire_HandleTypeDef *dwire)
+{
+  if (dwire->have_all_regs) return;
+  DWire_GetRegs(dwire, 0, dwire->regs, 28);
+}
+
 void DWire_FlushCacheRegs(DWire_HandleTypeDef *dwire)
 {
-  DWire_SetRegs(dwire, 28, &dwire->regs[28], 4);
+  if (dwire->have_all_regs)
+    DWire_SetRegs(dwire, 0, dwire->regs, 32);
+  else
+    DWire_SetRegs(dwire, 28, &dwire->regs[28], 4);
   DWire_SetPC(dwire, dwire->pc/2);
 }
 
@@ -254,6 +270,7 @@ void DWire_Sync(DWire_HandleTypeDef *dwire)
     if (byte != 0x00) longjmp(dwire->env, 1);
   }
   if (!UARTHelper_PollBreak(dwire->huarth)) longjmp(dwire->env, 1);
+  dwire->stopped = true;
 }
 
 void DWire_BreakSync(DWire_HandleTypeDef *dwire)
@@ -266,6 +283,7 @@ void DWire_BreakSync(DWire_HandleTypeDef *dwire)
 void DWire_Reconnect(DWire_HandleTypeDef *dwire)
 {
   DWire_CacheRegs(dwire);
+  dwire->have_all_regs = false;
 }
 
 void DWire_Reset(DWire_HandleTypeDef *dwire)
@@ -303,6 +321,7 @@ void DWire_Step(DWire_HandleTypeDef *dwire)
   DWire_Send(dwire, BYTES(DWIRE_FLAG_RUN, DWIRE_RESUME_SS));
   DWire_Sync(dwire);
   DWire_Reconnect(dwire);
+  dwire->have_all_regs = false;
 }
 
 void DWire_Run(DWire_HandleTypeDef *dwire)
@@ -322,6 +341,8 @@ void DWire_Continue(DWire_HandleTypeDef *dwire)
     DWire_Send(dwire, BYTES(DWIRE_FLAG_RUN_TO_CURSOR));
   }
   DWire_Send(dwire, BYTES(DWIRE_RESUME));
+  dwire->stopped = false;
+  dwire->have_all_regs = false;
 }
 
 uint16_t DWire_Signature(DWire_HandleTypeDef *dwire)

@@ -12,15 +12,19 @@ typedef struct {
   uint8_t regs[32];
   int pc;
   int breakpoint;
+  bool have_all_regs;
+  bool stopped;
 } DWire_HandleTypeDef;
 
-void DWire_Send(DWire_HandleTypeDef *huarth, uint8_t *buf, size_t len);
+void DWire_Init(DWire_HandleTypeDef *dwire, UARTHelper_HandleTypeDef *huarth);
+void DWire_Send(DWire_HandleTypeDef *dwire, uint8_t *buf, size_t len);
 void DWire_Receive(DWire_HandleTypeDef *dwire, uint8_t *buf, size_t len);
 uint8_t DWire_ReceiveByte(DWire_HandleTypeDef *dwire);
 uint16_t DWire_ReceiveWord(DWire_HandleTypeDef *dwire);
 void DWire_SendByte(DWire_HandleTypeDef *dwire, uint8_t byte);
 void DWire_ReadAddr(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *buf, size_t count);
 void DWire_WriteAddr(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *buf, size_t count);
+void DWire_CacheAllRegs(DWire_HandleTypeDef *dwire);
 void DWire_Start(DWire_HandleTypeDef *dwire);
 void DWire_Break(DWire_HandleTypeDef *dwire);
 void DWire_Reconnect(DWire_HandleTypeDef *dwire);
