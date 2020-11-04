@@ -316,6 +316,11 @@ void HandleGDB()
   }
   int sz = ReceiveGDB();
   if (sz <= 0) return;
+  if (setjmp(hdw.env)) {
+    // there was a DWIRE error, send a failure
+    SendGDBError(1);
+    return;
+  }
   switch (buffer[0]) {
     case 'm': {
       int addr, len;
@@ -360,12 +365,12 @@ void HandleGDB()
       if (space < SWD_DATA_SPACE_OFFSET) {
         // TODO: flash writing by gdb
         SendGDBError(1);
-        break;
       } else switch(space) {
         case SWD_DATA_SPACE_OFFSET: {
           hex2buf(buffer, cbuffer + pos, len);
           DWire_WriteAddr(&hdw, addr - SWD_DATA_SPACE_OFFSET, buffer, len);
           SendGDBOK();
+          break;
         }
         default:
           // TODO: support more address spaces
@@ -393,13 +398,13 @@ void HandleGDB()
         case SWD_DATA_SPACE_OFFSET: {
           DWire_WriteAddr(&hdw, addr - SWD_DATA_SPACE_OFFSET, buffer + pos, len);
           SendGDBOK();
+          break;
         }
         default:
           // TODO: support more address spaces
           SendGDBError(1);
           break;
       }
-      SendGDBOK();
       break;
     }
     case 'v': {

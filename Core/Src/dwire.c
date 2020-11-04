@@ -218,6 +218,7 @@ void DWire_CacheAllRegs(DWire_HandleTypeDef *dwire)
 {
   if (dwire->have_all_regs) return;
   DWire_GetRegs(dwire, 0, dwire->regs, 28);
+  dwire->have_all_regs = true;
 }
 
 void DWire_FlushCacheRegs(DWire_HandleTypeDef *dwire)
@@ -235,13 +236,15 @@ void DWire_ReadAddr(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *buf, siz
   DWire_SetBP(dwire, 2);
   DWire_Send(dwire, BYTES(DWIRE_FLAG_MEMORY, DWIRE_RW_MODE, DWIRE_MODE_READ_SRAM));
   for (int i = 0; i < count; i++) {
-    if (CACHED_REG(addr) || addr == DWIRE_DEV_DWDR) {
+    uint16_t iaddr = addr + i;
+    if (!CACHED_REG(iaddr) || iaddr != DWIRE_DEV_DWDR + 0x20) {
       DWire_SetPC(dwire, 0);
       DWire_Send(dwire, BYTES(DWIRE_GO));
       buf[i] = DWire_ReceiveByte(dwire);
     } else {
-      if (CACHED_REG(addr)) buf[i] = dwire->regs[addr];
-      DWire_SetZ(dwire, addr + i + 1);
+      if (CACHED_REG(iaddr)) buf[i] = dwire->regs[iaddr];
+      else buf[i] = 0;
+      DWire_SetZ(dwire, iaddr + 1);
     }
   }
 }
@@ -252,11 +255,12 @@ void DWire_WriteAddr(DWire_HandleTypeDef *dwire, uint16_t addr, uint8_t *buf, si
   DWire_SetBP(dwire, 3);
   DWire_Send(dwire, BYTES(DWIRE_FLAG_MEMORY, DWIRE_RW_MODE, DWIRE_MODE_WRITE_SRAM));
   for (int i = 0; i < count; i++) {
-    if (CACHED_REG(addr) || addr == DWIRE_DEV_DWDR) {
+    uint16_t iaddr = addr + i;
+    if (!CACHED_REG(iaddr) || iaddr != DWIRE_DEV_DWDR + 0x20) {
       DWire_SetPC(dwire, 1);
       DWire_Send(dwire, BYTES(DWIRE_GO, buf[i]));
     } else {
-      if (CACHED_REG(addr)) dwire->regs[addr] = buf[i];
+      if (CACHED_REG(iaddr)) dwire->regs[iaddr] = buf[i];
       DWire_SetZ(dwire, addr + i + 1);
     }
   }
