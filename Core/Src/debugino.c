@@ -215,7 +215,7 @@ static int hex2val(int ch)
 static int val2hex(int val)
 {
   if (val >= 0 && val <= 9) return val + '0';
-  if (val >= 10 && val <= 15) return val + 'a';
+  if (val >= 10 && val <= 15) return val + 'a' - 10;
   return '?';
 }
 
@@ -223,7 +223,7 @@ static int hex2buf(uint8_t *buf, const char *data, int count)
 {
   int n;
   for (n = 0; n < count && data[2*n] && data[2*n+1]; n++) {
-    int v = (hex2val(data[2*n]) << 8) | hex2val(data[2*n+1]);
+    int v = (hex2val(data[2*n]) << 4) | hex2val(data[2*n+1]);
     if (v < 0) break;
     buf[n] = v;
   }
@@ -233,7 +233,7 @@ static int hex2buf(uint8_t *buf, const char *data, int count)
 static void buf2hex(const uint8_t *buf, char *data, int count)
 {
   for (int n = 0; n < count; n++) {
-    data[2*n] = val2hex(buf[n] >> 8);
+    data[2*n] = val2hex(buf[n] >> 4);
     data[2*n+1] = val2hex(buf[n] & 0xf);
   }
 }
@@ -244,8 +244,8 @@ int ReceiveGDB()
   int sz;
   for (sz = 0; sz < BUFFER_SIZE-1; sz++) {
     int ch = Queue_RecvChar(queueUSBtoDEBUGHandle);
-    cksum += ch;
     if (ch == '#') break;
+    cksum += ch;
     if (ch == '}') {
       ch = Queue_RecvChar(queueUSBtoDEBUGHandle);
       cksum += ch;
@@ -256,7 +256,7 @@ int ReceiveGDB()
   buffer[sz] = 0;
   int ch1 = hex2val(Queue_RecvChar(queueUSBtoDEBUGHandle));
   int ch2 = hex2val(Queue_RecvChar(queueUSBtoDEBUGHandle));
-  if (ch1 < 0 || ch2 < 0 || cksum != ((ch1 << 8) | ch2)) {
+  if (ch1 < 0 || ch2 < 0 || cksum != ((ch1 << 4) | ch2)) {
     Queue_SendChar(queueDEBUGtoUSBHandle, '-');
     return -1;
   } else {
@@ -280,7 +280,7 @@ void SendGDB(int sz)
     cksum += ch;
   }
   Queue_SendChar(queueDEBUGtoUSBHandle, '#');
-  Queue_SendChar(queueDEBUGtoUSBHandle, val2hex(cksum >> 8));
+  Queue_SendChar(queueDEBUGtoUSBHandle, val2hex(cksum >> 4));
   Queue_SendChar(queueDEBUGtoUSBHandle, val2hex(cksum & 0xf));
 
   Queue_RecvChar(queueUSBtoDEBUGHandle);
@@ -495,10 +495,6 @@ void HandleGDB()
       SendGDBStatus(SIGTRAP);
       break;
     }
-    case 'D':
-    case 'H':
-    case 'r':
-    case 'R':
     case 'z': {
       int type, addr, kind;
       if (sscanf(cbuffer, "z%d,%x,%x", &type, &addr, &kind) < 3) {
@@ -531,6 +527,10 @@ void HandleGDB()
           break;
       }
     }
+    case 'D':
+    case 'H':
+    case 'r':
+    case 'R':
     default:
       SendGDB(0);
       break;
