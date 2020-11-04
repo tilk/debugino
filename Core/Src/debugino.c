@@ -437,6 +437,7 @@ void HandleGDB()
       extraregs[5] = extraregs[6] = 0;
       buf2hex(extraregs, cbuffer + 64, 7);
       SendGDB(78);
+      break;
     }
     case 'G': {
       // possibly not needed, registers set using 'P'
@@ -507,30 +508,36 @@ void HandleGDB()
         break;
       }
       switch (type) {
+        case 0:
         case 1: {
           hdw.breakpoint = -1;
+          SendGDBOK();
           break;
         }
         default:
           SendGDB(0);
           break;
       }
+      break;
     }
     case 'Z': {
       int type, addr, kind;
-      if (sscanf(cbuffer, "z%d,%x,%x", &type, &addr, &kind) < 3) {
+      if (sscanf(cbuffer, "Z%d,%x,%x", &type, &addr, &kind) < 3) {
         SendGDBError(1);
         break;
       }
       switch (type) {
+        case 0:
         case 1: {
           hdw.breakpoint = addr;
+          SendGDBOK();
           break;
         }
         default:
           SendGDB(0);
           break;
       }
+      break;
     }
     case 'D':
     case 'H':
