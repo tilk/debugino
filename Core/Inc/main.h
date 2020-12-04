@@ -69,12 +69,14 @@ extern UARTHelper_HandleTypeDef huarth3;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define LED_Pin GPIO_PIN_13
-#define LED_GPIO_Port GPIOC
-#define LED2_Pin GPIO_PIN_14
-#define LED2_GPIO_Port GPIOC
-#define LED3_Pin GPIO_PIN_15
-#define LED3_GPIO_Port GPIOC
+#define LED_DEBUG_Pin GPIO_PIN_13
+#define LED_DEBUG_GPIO_Port GPIOC
+#define LED_RX_Pin GPIO_PIN_14
+#define LED_RX_GPIO_Port GPIOC
+#define LED_TX_Pin GPIO_PIN_15
+#define LED_TX_GPIO_Port GPIOC
+#define LED_POWER_Pin GPIO_PIN_2
+#define LED_POWER_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
