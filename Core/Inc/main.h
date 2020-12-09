@@ -55,6 +55,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+void FlashLED(uint16_t led);
 
 extern osMessageQueueId_t queueUARTtoUSBHandle;
 extern osMessageQueueId_t queueUSBtoUARTHandle;

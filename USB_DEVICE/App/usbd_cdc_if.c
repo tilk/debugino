@@ -268,6 +268,7 @@ static int8_t CDC_Receive_FS(uint8_t* buf, uint32_t *len, uint16_t index)
   for (int i = 0; i < *len; i++)
     osMessageQueuePut(queue, &buf[i], 0, 0);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS, index);
+  if (index == 0) FlashLED(LED_RX_Pin);
   return USBD_OK;
   /* USER CODE END 6 */
 }
@@ -293,6 +294,7 @@ uint8_t CDC_Transmit_FS(uint8_t* buf, uint16_t len, uint16_t index)
   }
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, buf, len);
   result = USBD_CDC_TransmitPacket(&hUsbDeviceFS, index);
+  if (index == 0) FlashLED(LED_TX_Pin);
   /* USER CODE END 7 */
   return result;
 }

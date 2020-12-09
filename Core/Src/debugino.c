@@ -561,6 +561,7 @@ void DebugLoop()
 {
   if (Queue_PollRecv(queueUSBtoDEBUGHandle)) {
     // debugger command available
+    FlashLED(LED_DEBUG_Pin);
     int ch = Queue_RecvChar(queueUSBtoDEBUGHandle);
     if (ch == STK500v2_MESSAGE_START) {
       HandleSTK500v2();
@@ -589,4 +590,10 @@ void DebugInit(UARTHelper_HandleTypeDef *huarth)
 {
   DWire_Init(&hdw, huarth);
 }
+
+bool DebugIsStopped()
+{
+  return hdw.stopped;
+}
+
 

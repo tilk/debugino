@@ -2,6 +2,7 @@
 #define __DEBUGINO_H
 
 #include "uart_helper.h"
+#include <stdbool.h>
 
 #define SWD_FLASH_SPACE_OFFSET 0x000000
 #define SWD_DATA_SPACE_OFFSET 0x800000
@@ -15,5 +16,6 @@
 
 void DebugInit(UARTHelper_HandleTypeDef *huarth);
 void DebugLoop();
+bool DebugIsStopped();
 
 #endif

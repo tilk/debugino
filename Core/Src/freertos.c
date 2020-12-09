@@ -29,11 +29,13 @@
 #include "usart.h"
 #include "uart_helper.h"
 #include "debugino.h"
+#include "timers.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 typedef StaticTask_t osStaticThreadDef_t;
 typedef StaticQueue_t osStaticMessageQDef_t;
+typedef StaticTimer_t osStaticTimerDef_t;
 typedef StaticSemaphore_t osStaticSemaphoreDef_t;
 /* USER CODE BEGIN PTD */
 
@@ -51,6 +53,9 @@ typedef StaticSemaphore_t osStaticSemaphoreDef_t;
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+static uint32_t txLEDTick;
+static uint32_t rxLEDTick;
+static uint32_t debugLEDTick;
 
 /* USER CODE END Variables */
 /* Definitions for debugger */
@@ -150,6 +155,14 @@ const osMessageQueueAttr_t queueUSBtoDEBUG_attributes = {
   .mq_mem = &queueUSBtoDEBUGBuffer,
   .mq_size = sizeof(queueUSBtoDEBUGBuffer)
 };
+/* Definitions for LEDTimer */
+osTimerId_t LEDTimerHandle;
+osStaticTimerDef_t pwrLEDTimerControlBlock;
+const osTimerAttr_t LEDTimer_attributes = {
+  .name = "LEDTimer",
+  .cb_mem = &pwrLEDTimerControlBlock,
+  .cb_size = sizeof(pwrLEDTimerControlBlock),
+};
 /* Definitions for txSemaphore1 */
 osSemaphoreId_t txSemaphore1Handle;
 osStaticSemaphoreDef_t txSemaphore1ControlBlock;
@@ -191,6 +204,7 @@ const osSemaphoreAttr_t breakTxSemaphore_attributes = {
 void StartDebugger(void *argument);
 void StartUartSender1(void *argument);
 void StartUartSender2(void *argument);
+void LEDTimerCallback(void *argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -226,8 +240,13 @@ void MX_FREERTOS_Init(void) {
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
+  /* Create the timer(s) */
+  /* creation of LEDTimer */
+  LEDTimerHandle = osTimerNew(LEDTimerCallback, osTimerPeriodic, NULL, &LEDTimer_attributes);
+
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
+  osTimerStart(LEDTimerHandle, 20u * osKernelGetTickFreq() / 1000u);
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
@@ -328,9 +347,38 @@ void StartUartSender2(void *argument)
   /* USER CODE END StartUartSender2 */
 }
 
+/* LEDTimerCallback function */
+void LEDTimerCallback(void *argument)
+{
+  /* USER CODE BEGIN LEDTimerCallback */
+  uint32_t ticks = osKernelGetTickCount();
+  const uint32_t timeout = 200u * osKernelGetTickFreq() / 1000u;
+  if (ticks - rxLEDTick > timeout)
+    HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
+  if (ticks - txLEDTick > timeout)
+    HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_RESET);
+  if (ticks - debugLEDTick > timeout)
+    HAL_GPIO_WritePin(LED_DEBUG_GPIO_Port, LED_DEBUG_Pin, GPIO_PIN_RESET);
+  if (DebugIsStopped() && ticks % osKernelGetTickFreq() > timeout) 
+    HAL_GPIO_WritePin(LED_POWER_GPIO_Port, LED_POWER_Pin, GPIO_PIN_RESET);
+  else
+    HAL_GPIO_WritePin(LED_POWER_GPIO_Port, LED_POWER_Pin, GPIO_PIN_SET);
+  /* USER CODE END LEDTimerCallback */
+}
+
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-
+void FlashLED(uint16_t led)
+{
+  switch (led)
+  {
+    case LED_RX_Pin: rxLEDTick = osKernelGetTickCount(); break;
+    case LED_TX_Pin: txLEDTick = osKernelGetTickCount(); break;
+    case LED_DEBUG_Pin: debugLEDTick = osKernelGetTickCount(); break;
+    default: return;
+  }
+  HAL_GPIO_WritePin(LED_DEBUG_GPIO_Port, led, GPIO_PIN_SET);
+}
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
