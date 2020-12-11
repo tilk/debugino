@@ -58,13 +58,13 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 
 static void TrySendQueueToCDC(osMessageQueueId_t queue, int index) {
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState == 0) {
+  if (hcdc->TxState[index] == 0) {
     int n;
     for (n = 0; n < APP_TX_DATA_SIZE; n++) {
-        osStatus_t status = osMessageQueueGet(queue, &UserTxBufferFS[n], NULL, 0);
+        osStatus_t status = osMessageQueueGet(queue, &CDC_Get_Tx_Buffer(index)[n], NULL, 0);
         if (status != osOK) break;
     }
-    if (n > 0) CDC_Transmit_FS(UserTxBufferFS, n, index);
+    if (n > 0) CDC_Transmit_FS(CDC_Get_Tx_Buffer(index), n, index);
   }
 }
 /* USER CODE END 0 */
@@ -249,11 +249,11 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
   static int flag;
   flag = !flag;
   if (flag) {
-    TrySendQueueToCDC(queueDEBUGtoUSBHandle, 2);
+    TrySendQueueToCDC(queueDEBUGtoUSBHandle, 1);
     TrySendQueueToCDC(queueUARTtoUSBHandle, 0);
   } else {
     TrySendQueueToCDC(queueUARTtoUSBHandle, 0);
-    TrySendQueueToCDC(queueDEBUGtoUSBHandle, 2);
+    TrySendQueueToCDC(queueDEBUGtoUSBHandle, 1);
   }
   /* USER CODE END USB_LP_CAN1_RX0_IRQn 1 */
 }

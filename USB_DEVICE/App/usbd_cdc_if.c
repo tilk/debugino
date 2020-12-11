@@ -93,7 +93,8 @@ uint8_t UserRxBufferFS1[APP_RX_DATA_SIZE];
 uint8_t UserRxBufferFS2[APP_RX_DATA_SIZE];
 
 /** Data to send over USB CDC are stored in this buffer   */
-uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
+uint8_t UserTxBufferFS1[APP_TX_DATA_SIZE];
+uint8_t UserTxBufferFS2[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 
@@ -153,7 +154,8 @@ static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
   /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS1, 0, 0);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS2, 0, 1);
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS1, 0);
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS2, 1);
   return (USBD_OK);
@@ -289,10 +291,10 @@ uint8_t CDC_Transmit_FS(uint8_t* buf, uint16_t len, uint16_t index)
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0){
+  if (hcdc->TxState[index] != 0){
     return USBD_BUSY;
   }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, buf, len);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, buf, len, index);
   result = USBD_CDC_TransmitPacket(&hUsbDeviceFS, index);
   if (index == 0) FlashLED(LED_TX_Pin);
   /* USER CODE END 7 */
@@ -310,6 +312,11 @@ int8_t CDC_Retry_Receive_FS(uint16_t index)
   return USBD_OK;
 }
 
+uint8_t *CDC_Get_Tx_Buffer(uint16_t index)
+{
+  if (index == 0) return UserTxBufferFS1;
+  else return UserTxBufferFS2;
+}
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**

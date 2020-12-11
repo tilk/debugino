@@ -841,7 +841,8 @@ static uint8_t  USBD_CDC_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
     ((USBD_CDC_ItfTypeDef *)pdev->pUserData)->Init();
 
     /* Init Xfer states */
-    hcdc->TxState = 0U;
+    hcdc->TxState[0] = 0U;
+    hcdc->TxState[1] = 0U;
     hcdc->RxState = 0U;
 
     if (pdev->dev_speed == USBD_SPEED_HIGH)
@@ -1035,7 +1036,8 @@ static uint8_t  USBD_CDC_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
     }
     else
     {
-      hcdc->TxState = 0U;
+      int index = (epnum == CDC_OUT1_EP) ? 0 : 1;
+      hcdc->TxState[index] = 0U;
     }
     return USBD_OK;
   }
@@ -1176,12 +1178,13 @@ uint8_t  USBD_CDC_RegisterInterface(USBD_HandleTypeDef   *pdev,
   */
 uint8_t  USBD_CDC_SetTxBuffer(USBD_HandleTypeDef   *pdev,
                               uint8_t  *pbuff,
-                              uint16_t length)
+                              uint16_t length,
+                              uint16_t index)
 {
   USBD_CDC_HandleTypeDef   *hcdc = (USBD_CDC_HandleTypeDef *) pdev->pClassData;
 
-  hcdc->TxBuffer = pbuff;
-  hcdc->TxLength = length;
+  hcdc->TxBuffer[index] = pbuff;
+  hcdc->TxLength[index] = length;
 
   return USBD_OK;
 }
@@ -1216,19 +1219,19 @@ uint8_t  USBD_CDC_TransmitPacket(USBD_HandleTypeDef *pdev, uint16_t index)
 
   if (pdev->pClassData != NULL)
   {
-    if (hcdc->TxState == 0U)
+    if (hcdc->TxState[index] == 0U)
     {
       /* Tx Transfer in progress */
-      hcdc->TxState = 1U;
+      hcdc->TxState[index] = 1U;
 
       uint8_t ep_addr = (index < 1) ? CDC_IN1_EP : CDC_IN2_EP;
 
       /* Update the packet total length */
-      pdev->ep_in[ep_addr & 0xFU].total_length = hcdc->TxLength;
+      pdev->ep_in[ep_addr & 0xFU].total_length = hcdc->TxLength[index];
 
       /* Transmit next packet */
-      USBD_LL_Transmit(pdev, ep_addr, hcdc->TxBuffer,
-                       (uint16_t)hcdc->TxLength);
+      USBD_LL_Transmit(pdev, ep_addr, hcdc->TxBuffer[index],
+                       (uint16_t)hcdc->TxLength[index]);
 
       return USBD_OK;
     }

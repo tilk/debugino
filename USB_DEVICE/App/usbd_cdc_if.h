@@ -95,7 +95,6 @@
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-extern uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE END EXPORTED_VARIABLES */
 
@@ -112,7 +111,7 @@ uint8_t CDC_Transmit_FS(uint8_t* pbuf, uint16_t len, uint16_t index);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 int8_t CDC_Retry_Receive_FS(uint16_t index);
-
+uint8_t *CDC_Get_Tx_Buffer(uint16_t index);
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**
