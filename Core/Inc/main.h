@@ -78,6 +78,16 @@ extern UARTHelper_HandleTypeDef huarth3;
 #define LED_TX_GPIO_Port GPIOC
 #define LED_POWER_Pin GPIO_PIN_2
 #define LED_POWER_GPIO_Port GPIOA
+#define CURRENT_Pin GPIO_PIN_3
+#define CURRENT_GPIO_Port GPIOA
+#define DWIRE_Pin GPIO_PIN_10
+#define DWIRE_GPIO_Port GPIOB
+#define CLKOUT_Pin GPIO_PIN_8
+#define CLKOUT_GPIO_Port GPIOA
+#define UART_TX_Pin GPIO_PIN_6
+#define UART_TX_GPIO_Port GPIOB
+#define UART_RX_Pin GPIO_PIN_7
+#define UART_RX_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
